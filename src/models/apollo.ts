@@ -25,7 +25,12 @@ class Apollo {
           resolvers: [PostResolvers, UserResolvers],
           validate: false
         }),
-        context: (): ApolloContext => ({ em: orm.em, orm })
+        context: ({ req, res }): ApolloContext => ({
+          res,
+          orm,
+          req,
+          em: orm.em
+        })
       })
 
       this.apollo.applyMiddleware({ app: this.app })
