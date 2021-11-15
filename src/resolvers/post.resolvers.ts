@@ -1,30 +1,30 @@
 import { Arg, Ctx, Mutation, Query, Resolver } from 'type-graphql'
 
-import Post from '../entities/Post'
+import Post from '../entities/Posts'
 import { ApolloContext } from '../interfaces'
 
 @Resolver()
 class PostResolvers {
   @Query(() => [Post])
-  getPost(@Ctx() { em }: ApolloContext): Promise<Post[]> | undefined {
-    return em?.find(Post, {})
+  getPosts(@Ctx() { em }: ApolloContext): Promise<Post[]> {
+    return em.find(Post, {})
   }
 
   @Query(() => Post, { nullable: true })
   getPostById(
     @Arg('id') id: number,
     @Ctx() { em }: ApolloContext
-  ): Promise<Post | null> | undefined {
-    return em?.findOne(Post, { id })
+  ): Promise<Post | null> {
+    return em.findOne(Post, { id })
   }
 
   @Mutation(() => Post)
   async createPost(
     @Arg('title') title: string,
     @Ctx() { em }: ApolloContext
-  ): Promise<Post | undefined> {
-    const post = em?.create(Post, { title })
-    await em?.persistAndFlush(post!)
+  ): Promise<Post> {
+    const post = em.create(Post, { title })
+    await em.persistAndFlush(post!)
     return post
   }
 
@@ -34,14 +34,14 @@ class PostResolvers {
     @Arg('title') title: string,
     @Ctx() { em }: ApolloContext
   ): Promise<Post | null> {
-    const post = await em?.findOne(Post, { id })
+    const post = await em.findOne(Post, { id })
     if (!post) {
       return null
     }
 
     if (typeof title !== 'undefined') {
       post.title = title
-      await em?.persistAndFlush(post)
+      await em.persistAndFlush(post)
     }
 
     return post
@@ -52,13 +52,9 @@ class PostResolvers {
     @Arg('id') id: number,
     @Ctx() { em }: ApolloContext
   ): Promise<boolean> {
-    const post = await em?.findOne(Post, { id })
-    if (!post) {
-      return false
-    }
-
-    em?.removeAndFlush(post)
-
+    const post = await em.findOne(Post, { id })
+    if (!post) return false
+    em.removeAndFlush(post)
     return true
   }
 }

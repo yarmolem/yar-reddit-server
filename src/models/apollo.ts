@@ -2,9 +2,13 @@ import { Express } from 'express'
 import { buildSchema } from 'type-graphql'
 import { ApolloServer } from 'apollo-server-express'
 
-import { Orm } from './server'
-import { ApolloContext } from '../interfaces'
+import { Orm, ApolloContext } from '../interfaces'
 import PostResolvers from '../resolvers/post.resolvers'
+import UserResolvers from '../resolvers/user.resolvers'
+
+interface StartProps {
+  orm: Orm
+}
 
 class Apollo {
   private app: Express
@@ -14,14 +18,14 @@ class Apollo {
     this.app = app
   }
 
-  async start(orm: Orm | null) {
+  async start({ orm }: StartProps) {
     try {
       this.apollo = new ApolloServer({
         schema: await buildSchema({
-          resolvers: [PostResolvers],
+          resolvers: [PostResolvers, UserResolvers],
           validate: false
         }),
-        context: (): ApolloContext => ({ em: orm!.em, orm })
+        context: (): ApolloContext => ({ em: orm.em, orm })
       })
 
       this.apollo.applyMiddleware({ app: this.app })

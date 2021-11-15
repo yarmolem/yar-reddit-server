@@ -3,7 +3,7 @@ import { Field, ObjectType } from 'type-graphql'
 
 @Entity()
 @ObjectType()
-export class Post {
+export class Posts {
   @Field()
   @PrimaryKey()
   id!: number
@@ -21,4 +21,4 @@ export class Post {
   updatedAt: Date = new Date()
 }
 
-export default Post
+export default Posts

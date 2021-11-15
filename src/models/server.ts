@@ -1,40 +1,27 @@
 import express, { Express } from 'express'
-import {
-  MikroORM,
-  Connection,
-  EntityManager,
-  IDatabaseDriver
-} from '@mikro-orm/core'
 
 import Database from './db'
 import Apollo from './apollo'
 
-export type Orm = MikroORM<IDatabaseDriver<Connection>>
-export type Em = EntityManager<IDatabaseDriver<Connection>>
-
 class Server {
   app: Express
-  port: number | string
-  apollo: Apollo
-
   db: Database
-  orm: Orm | null
+  apollo: Apollo
+  port: number | string
 
   constructor() {
-    this.app = express()
     this.port = process.env.PORT ?? 8080
-
+    this.app = express()
     this.db = new Database()
-
     this.apollo = new Apollo(this.app)
   }
 
   async start() {
     // DB connection
-    this.orm = await this.db.connect()
+    const orm = await this.db.connect()
 
     // Start Apollo
-    await this.apollo.start(this.orm)
+    await this.apollo.start({ orm })
 
     // Start Server
     this.app.listen(this.port, () => {
