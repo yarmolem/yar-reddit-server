@@ -6,7 +6,7 @@ import { ApolloContext } from '../interfaces'
 @Resolver()
 class PostResolvers {
   @Query(() => [Post])
-  getPosts(@Ctx() { em }: ApolloContext): Promise<Post[]> {
+  async getPosts(@Ctx() { em }: ApolloContext): Promise<Post[]> {
     return em.find(Post, {})
   }
 

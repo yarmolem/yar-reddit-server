@@ -2,7 +2,7 @@ import session from 'express-session'
 import redis, { RedisClient } from 'redis'
 import connectRedis, { RedisStore } from 'connect-redis'
 
-import { isProd } from '../utils/constants'
+import { COOKIE_NAME, isProd } from '../utils/constants'
 
 class Session {
   private Store: RedisStore
@@ -15,8 +15,8 @@ class Session {
 
   get sessionMiddleware() {
     return session({
-      name: 'qid',
       resave: false,
+      name: COOKIE_NAME,
       secret: 'keyboard cat',
       saveUninitialized: false,
       cookie: {

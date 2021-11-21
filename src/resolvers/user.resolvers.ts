@@ -9,9 +9,11 @@ import {
   InputType,
   ObjectType
 } from 'type-graphql'
+import { EntityManager } from '@mikro-orm/postgresql'
 
 import User from '../entities/Users'
 import { ApolloContext } from '../interfaces'
+import { COOKIE_NAME } from '../utils/constants'
 
 @InputType()
 class UsernamePasswordInput {
@@ -71,14 +73,23 @@ class UserResolvers {
 
     const hashPassword = await argon2.hash(password)
 
-    const user = em.create(User, {
-      username: username,
-      password: hashPassword
-    })
+    let user
 
     try {
-      await em.persistAndFlush(user)
+      const res = await (em as EntityManager)
+        .createQueryBuilder(User)
+        .getKnexQuery()
+        .insert({
+          username: username,
+          password: hashPassword,
+          updated_at: new Date(),
+          created_at: new Date()
+        })
+        .returning('*')
+
+      user = res[0]
     } catch (error) {
+      console.log(error)
       if (error.code === '23505') {
         return {
           errors: [{ field: 'username', message: 'Username already taken' }]
@@ -87,7 +98,6 @@ class UserResolvers {
     }
 
     req.session.userId = user.id
-
     return { user }
   }
 
@@ -115,6 +125,21 @@ class UserResolvers {
     req.session.userId = user.id
 
     return { user }
+  }
+
+  @Mutation(() => Boolean)
+  logout(@Ctx() { req, res }: ApolloContext): Promise<boolean> {
+    return new Promise((resolve) => {
+      req.session.destroy((err) => {
+        if (err) {
+          resolve(false)
+          return
+        }
+
+        res.clearCookie(COOKIE_NAME)
+        resolve(true)
+      })
+    })
   }
 }
 

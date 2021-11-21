@@ -33,7 +33,7 @@ class Apollo {
         })
       })
 
-      this.apollo.applyMiddleware({ app: this.app })
+      this.apollo.applyMiddleware({ app: this.app, cors: false })
     } catch (error) {
       console.log('[APOLLO] - ', error)
     }

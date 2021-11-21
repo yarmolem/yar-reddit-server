@@ -1,3 +1,4 @@
+import cors from 'cors'
 import express, { Express } from 'express'
 
 import Database from './db'
@@ -20,6 +21,12 @@ class Server {
   }
 
   middlewares() {
+    this.app.use(
+      cors({
+        credentials: true,
+        origin: 'http://localhost:3000'
+      })
+    )
     this.app.use(this.session.sessionMiddleware)
   }
 
