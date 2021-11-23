@@ -1,4 +1,5 @@
 import argon2 from 'argon2'
+import validator from 'validator'
 import {
   Arg,
   Ctx,
@@ -14,9 +15,13 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import User from '../entities/Users'
 import { ApolloContext } from '../interfaces'
 import { COOKIE_NAME } from '../utils/constants'
+import { validateRegister } from '../validation/validateRegister'
 
 @InputType()
-class UsernamePasswordInput {
+export class UsernamePasswordInput {
+  @Field()
+  email: string
+
   @Field()
   username: string
 
@@ -52,26 +57,16 @@ class UserResolvers {
     return user
   }
 
+  // REGISTER
   @Mutation(() => UserResponse)
   async register(
     @Ctx() { em, req }: ApolloContext,
     @Arg('input') input: UsernamePasswordInput
   ): Promise<UserResponse> {
-    const { password, username } = input
+    const errors = validateRegister(input)
+    if (errors) return { errors }
 
-    if (username.trim().length <= 2) {
-      return {
-        errors: [{ field: 'username', message: 'Must be greater than 2' }]
-      }
-    }
-
-    if (password.trim().length <= 2) {
-      return {
-        errors: [{ field: 'password', message: 'Must be greater than 2' }]
-      }
-    }
-
-    const hashPassword = await argon2.hash(password)
+    const hashPassword = await argon2.hash(input.password)
 
     let user
 
@@ -80,7 +75,7 @@ class UserResolvers {
         .createQueryBuilder(User)
         .getKnexQuery()
         .insert({
-          username: username,
+          ...input,
           password: hashPassword,
           updated_at: new Date(),
           created_at: new Date()
@@ -91,9 +86,10 @@ class UserResolvers {
     } catch (error) {
       console.log(error)
       if (error.code === '23505') {
-        return {
-          errors: [{ field: 'username', message: 'Username already taken' }]
-        }
+        const field = error.detail.includes('email') ? 'email' : 'username'
+        const message =
+          field === 'email' ? 'Email already taken' : 'Username already taken'
+        return { errors: [{ field, message }] }
       }
     }
 
@@ -101,17 +97,27 @@ class UserResolvers {
     return { user }
   }
 
+  // LOGIN
   @Mutation(() => UserResponse)
   async login(
     @Ctx() { em, req }: ApolloContext,
-    @Arg('input') input: UsernamePasswordInput
+    @Arg('password') password: string,
+    @Arg('usernameOrEmail') usernameOrEmail: string
   ): Promise<UserResponse> {
-    const { password, username } = input
+    const isEmail = validator.isEmail(usernameOrEmail)
 
-    const user = await em.findOne(User, { username })
+    const user = await em.findOne(User, {
+      [isEmail ? 'email' : 'username']: usernameOrEmail
+    })
+
     if (!user) {
       return {
-        errors: [{ field: 'username', message: 'User doesnt exist.' }]
+        errors: [
+          {
+            field: 'usernameOrEmail',
+            message: 'User doesnt exist.'
+          }
+        ]
       }
     }
 
@@ -127,6 +133,7 @@ class UserResolvers {
     return { user }
   }
 
+  // LOGOUT
   @Mutation(() => Boolean)
   logout(@Ctx() { req, res }: ApolloContext): Promise<boolean> {
     return new Promise((resolve) => {
