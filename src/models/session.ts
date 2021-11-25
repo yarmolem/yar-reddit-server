@@ -1,16 +1,20 @@
 import session from 'express-session'
-import redis, { RedisClient } from 'redis'
+import Redis, { Redis as RedisType } from 'ioredis'
 import connectRedis, { RedisStore } from 'connect-redis'
 
 import { COOKIE_NAME, isProd } from '../utils/constants'
 
 class Session {
+  private Client: RedisType
   private Store: RedisStore
-  private Client: RedisClient
 
   constructor() {
+    this.Client = new Redis()
     this.Store = connectRedis(session)
-    this.Client = redis.createClient()
+  }
+
+  get redis() {
+    return this.Client
   }
 
   get sessionMiddleware() {

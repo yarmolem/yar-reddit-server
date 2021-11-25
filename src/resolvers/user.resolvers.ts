@@ -10,12 +10,15 @@ import {
   InputType,
   ObjectType
 } from 'type-graphql'
+import { v4 } from 'uuid'
 import { EntityManager } from '@mikro-orm/postgresql'
 
 import User from '../entities/Users'
+import sendEmail from '../utils/sendEmail'
 import { ApolloContext } from '../interfaces'
-import { COOKIE_NAME } from '../utils/constants'
+import { createLink } from '../utils/createLink'
 import { validateRegister } from '../validation/validateRegister'
+import { COOKIE_NAME, FORGOT_PASS_PREFIX } from '../utils/constants'
 
 @InputType()
 export class UsernamePasswordInput {
@@ -49,6 +52,7 @@ class UserResponse {
 
 @Resolver()
 class UserResolvers {
+  // ME
   @Query(() => User, { nullable: true })
   async me(@Ctx() { em, req }: ApolloContext): Promise<User | null> {
     if (!req.session.userId) return null
@@ -147,6 +151,66 @@ class UserResolvers {
         resolve(true)
       })
     })
+  }
+
+  // FORGOT PASSWORD
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg('email') email: string,
+    @Ctx() { em, redis }: ApolloContext
+  ) {
+    const user = await em.findOne(User, { email })
+    if (!user) return false
+
+    const token = v4()
+    const link = createLink(token)
+    await redis.set(
+      FORGOT_PASS_PREFIX + token,
+      user.id,
+      'ex',
+      1000 * 60 * 60 * 24 * 3
+    )
+    await sendEmail(email, link)
+
+    return true
+  }
+
+  // CHANGE PASSWORD
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg('token') token: string,
+    @Arg('password') password: string,
+    @Ctx() { em, req, redis }: ApolloContext
+  ): Promise<UserResponse> {
+    if (password.trim().length <= 2) {
+      return {
+        errors: [{ field: 'password', message: 'Must be grater than 2' }]
+      }
+    }
+
+    const userID = await redis.get(FORGOT_PASS_PREFIX + token)
+    if (!userID) {
+      return {
+        errors: [{ field: 'token', message: 'Expired token' }]
+      }
+    }
+
+    const user = await em.findOne(User, { id: +userID })
+    if (!user) {
+      return {
+        errors: [{ field: 'token', message: 'User no longer exists' }]
+      }
+    }
+
+    const hashPassword = await argon2.hash(password)
+    user.password = hashPassword
+    await em.persistAndFlush(user)
+
+    await redis.del(FORGOT_PASS_PREFIX + token)
+
+    req.session.userId = user.id
+
+    return { user }
   }
 }
 

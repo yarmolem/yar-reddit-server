@@ -38,7 +38,7 @@ class Server {
     this.middlewares()
 
     // Start Apollo
-    await this.apollo.start({ orm })
+    await this.apollo.start({ orm, redis: this.session.redis })
 
     // Start Server
     this.app.listen(this.port, () => {

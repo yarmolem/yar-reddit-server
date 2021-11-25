@@ -1,3 +1,4 @@
+import { Redis } from 'ioredis'
 import { Express } from 'express'
 import { buildSchema } from 'type-graphql'
 import { ApolloServer } from 'apollo-server-express'
@@ -8,6 +9,7 @@ import UserResolvers from '../resolvers/user.resolvers'
 
 interface StartProps {
   orm: Orm
+  redis: Redis
 }
 
 class Apollo {
@@ -18,7 +20,7 @@ class Apollo {
     this.app = app
   }
 
-  async start({ orm }: StartProps) {
+  async start({ orm, redis }: StartProps) {
     try {
       this.apollo = new ApolloServer({
         schema: await buildSchema({
@@ -29,6 +31,7 @@ class Apollo {
           res,
           orm,
           req,
+          redis,
           em: orm.em
         })
       })

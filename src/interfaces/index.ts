@@ -7,6 +7,7 @@ import {
 import { FilterValue } from '@mikro-orm/core/typings'
 import { Request, Response } from 'express'
 import session, { Session } from 'express-session'
+import { Redis } from 'ioredis'
 
 export type Orm = MikroORM<IDatabaseDriver<Connection>>
 export type Em = EntityManager<IDatabaseDriver<Connection>>
@@ -21,4 +22,5 @@ export interface ApolloContext {
   orm: Orm
   req: Req
   res: Response
+  redis: Redis
 }
