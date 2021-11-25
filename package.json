@@ -47,6 +47,7 @@
     "nodemailer": "^6.7.1",
     "pg": "^8.7.1",
     "type-graphql": "^1.1.1",
+    "typeorm": "^0.2.41",
     "uuid": "^8.3.2",
     "validator": "^13.7.0"
   },
