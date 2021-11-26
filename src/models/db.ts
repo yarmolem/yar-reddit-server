@@ -1,20 +1,22 @@
-import { Connection, IDatabaseDriver, MikroORM } from '@mikro-orm/core'
+import { isProd } from '../utils/constants'
+import { createConnection } from 'typeorm'
 
-import config from '../mikro-orm.config'
+import Posts from '../entities/Posts'
+import Users from '../entities/Users'
 
 class Database {
-  async connect(): Promise<MikroORM<IDatabaseDriver<Connection>>> {
-    const orm = await MikroORM.init(config).catch((err) => {
-      console.log('[DB_CONNECTION]', err)
+  async connect() {
+    const orm = await createConnection({
+      logging: isProd,
+      type: 'postgres',
+      username: 'root',
+      password: 'root',
+      synchronize: true,
+      database: 'yarredditv2',
+      entities: [Posts, Users]
     })
-    await orm!
-      .getMigrator()
-      .up()
-      .catch((err) => {
-        console.log('[DB_MIGRATION]', err)
-      })
-    console.log('DB ready')
-    return orm!
+
+    return orm
   }
 }
 

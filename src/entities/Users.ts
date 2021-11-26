@@ -2,6 +2,7 @@ import { Field, ObjectType } from 'type-graphql'
 import {
   Entity,
   Column,
+  BaseEntity,
   CreateDateColumn,
   UpdateDateColumn,
   PrimaryGeneratedColumn
@@ -9,7 +10,7 @@ import {
 
 @Entity()
 @ObjectType()
-export class Users {
+export class Users extends BaseEntity {
   @Field()
   @PrimaryGeneratedColumn()
   id!: number

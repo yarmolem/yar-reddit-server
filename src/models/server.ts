@@ -32,13 +32,13 @@ class Server {
 
   async start() {
     // DB connection
-    const orm = await this.db.connect()
+    await this.db.connect()
 
     // Start middlewares
     this.middlewares()
 
     // Start Apollo
-    await this.apollo.start({ orm, redis: this.session.redis })
+    await this.apollo.start({ redis: this.session.redis })
 
     // Start Server
     this.app.listen(this.port, () => {

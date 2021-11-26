@@ -6,55 +6,43 @@ import { ApolloContext } from '../interfaces'
 @Resolver()
 class PostResolvers {
   @Query(() => [Post])
-  async getPosts(@Ctx() { em }: ApolloContext): Promise<Post[]> {
-    return em.find(Post, {})
+  async getPosts(): Promise<Post[]> {
+    return Post.find()
   }
 
   @Query(() => Post, { nullable: true })
-  getPostById(
-    @Arg('id') id: number,
-    @Ctx() { em }: ApolloContext
-  ): Promise<Post | null> {
-    return em.findOne(Post, { id })
+  getPostById(@Arg('id') id: number): Promise<Post | undefined> {
+    return Post.findOne(id)
   }
 
   @Mutation(() => Post)
-  async createPost(
-    @Arg('title') title: string,
-    @Ctx() { em }: ApolloContext
-  ): Promise<Post> {
-    const post = em.create(Post, { title })
-    await em.persistAndFlush(post!)
-    return post
+  async createPost(@Arg('title') title: string): Promise<Post> {
+    return Post.create({ title }).save()
   }
 
   @Mutation(() => Post, { nullable: true })
   async updatePost(
     @Arg('id') id: number,
-    @Arg('title') title: string,
-    @Ctx() { em }: ApolloContext
+    @Arg('title') title: string
   ): Promise<Post | null> {
-    const post = await em.findOne(Post, { id })
-    if (!post) {
-      return null
-    }
+    if (!title) return null
 
-    if (typeof title !== 'undefined') {
-      post.title = title
-      await em.persistAndFlush(post)
-    }
+    const post = await Post.findOne({ where: { id } })
+    if (!post) return null
+
+    await Post.update({ id }, { title })
 
     return post
   }
 
   @Mutation(() => Boolean)
-  async deletePost(
-    @Arg('id') id: number,
-    @Ctx() { em }: ApolloContext
-  ): Promise<boolean> {
-    const post = await em.findOne(Post, { id })
-    if (!post) return false
-    em.removeAndFlush(post)
+  async deletePost(@Arg('id') id: number): Promise<boolean> {
+    try {
+      await Post.delete({ id })
+    } catch (error) {
+      console.log('[ERROR DELETING POST]', error)
+      return false
+    }
     return true
   }
 }

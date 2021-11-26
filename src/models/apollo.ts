@@ -3,12 +3,11 @@ import { Express } from 'express'
 import { buildSchema } from 'type-graphql'
 import { ApolloServer } from 'apollo-server-express'
 
-import { Orm, ApolloContext } from '../interfaces'
+import { ApolloContext } from '../interfaces'
 import PostResolvers from '../resolvers/post.resolvers'
 import UserResolvers from '../resolvers/user.resolvers'
 
 interface StartProps {
-  orm: Orm
   redis: Redis
 }
 
@@ -20,7 +19,7 @@ class Apollo {
     this.app = app
   }
 
-  async start({ orm, redis }: StartProps) {
+  async start({ redis }: StartProps) {
     try {
       this.apollo = new ApolloServer({
         schema: await buildSchema({
@@ -29,10 +28,8 @@ class Apollo {
         }),
         context: ({ req, res }): ApolloContext => ({
           res,
-          orm,
           req,
-          redis,
-          em: orm.em
+          redis
         })
       })
 
