@@ -1,7 +1,6 @@
-import { Arg, Ctx, Mutation, Query, Resolver } from 'type-graphql'
+import { Arg, Mutation, Query, Resolver } from 'type-graphql'
 
 import Post from '../entities/Posts'
-import { ApolloContext } from '../interfaces'
 
 @Resolver()
 class PostResolvers {

@@ -7,7 +7,7 @@ import Users from '../entities/Users'
 class Database {
   async connect() {
     const orm = await createConnection({
-      logging: isProd,
+      logging: !isProd,
       type: 'postgres',
       username: 'root',
       password: 'root',

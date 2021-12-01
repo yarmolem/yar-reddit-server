@@ -1,5 +1,3 @@
-import argon2 from 'argon2'
-import validator from 'validator'
 import {
   Arg,
   Ctx,
@@ -11,7 +9,9 @@ import {
   ObjectType
 } from 'type-graphql'
 import { v4 } from 'uuid'
-import { EntityManager } from '@mikro-orm/postgresql'
+import argon2 from 'argon2'
+import validator from 'validator'
+import { getConnection } from 'typeorm'
 
 import User from '../entities/Users'
 import sendEmail from '../utils/sendEmail'
@@ -54,17 +54,17 @@ class UserResponse {
 class UserResolvers {
   // ME
   @Query(() => User, { nullable: true })
-  async me(@Ctx() { em, req }: ApolloContext): Promise<User | null> {
+  async me(@Ctx() { req }: ApolloContext): Promise<User | null> {
     if (!req.session.userId) return null
-
-    const user = await em.findOne(User, { id: req.session.userId })
+    const user = await User.findOne(req.session.userId)
+    if (!user) return null
     return user
   }
 
   // REGISTER
   @Mutation(() => UserResponse)
   async register(
-    @Ctx() { em, req }: ApolloContext,
+    @Ctx() { req }: ApolloContext,
     @Arg('input') input: UsernamePasswordInput
   ): Promise<UserResponse> {
     const errors = validateRegister(input)
@@ -75,18 +75,18 @@ class UserResolvers {
     let user
 
     try {
-      const res = await (em as EntityManager)
-        .createQueryBuilder(User)
-        .getKnexQuery()
-        .insert({
+      const res = await getConnection()
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values({
           ...input,
-          password: hashPassword,
-          updated_at: new Date(),
-          created_at: new Date()
+          password: hashPassword
         })
         .returning('*')
+        .execute()
 
-      user = res[0]
+      user = res.raw[0]
     } catch (error) {
       console.log(error)
       if (error.code === '23505') {
@@ -104,14 +104,14 @@ class UserResolvers {
   // LOGIN
   @Mutation(() => UserResponse)
   async login(
-    @Ctx() { em, req }: ApolloContext,
+    @Ctx() { req }: ApolloContext,
     @Arg('password') password: string,
     @Arg('usernameOrEmail') usernameOrEmail: string
   ): Promise<UserResponse> {
     const isEmail = validator.isEmail(usernameOrEmail)
 
-    const user = await em.findOne(User, {
-      [isEmail ? 'email' : 'username']: usernameOrEmail
+    const user = await User.findOne({
+      where: { [isEmail ? 'email' : 'username']: usernameOrEmail }
     })
 
     if (!user) {
@@ -157,9 +157,9 @@ class UserResolvers {
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg('email') email: string,
-    @Ctx() { em, redis }: ApolloContext
+    @Ctx() { redis }: ApolloContext
   ) {
-    const user = await em.findOne(User, { email })
+    const user = await User.findOne({ where: { email } })
     if (!user) return false
 
     const token = v4()
@@ -180,7 +180,7 @@ class UserResolvers {
   async changePassword(
     @Arg('token') token: string,
     @Arg('password') password: string,
-    @Ctx() { em, req, redis }: ApolloContext
+    @Ctx() { req, redis }: ApolloContext
   ): Promise<UserResponse> {
     if (password.trim().length <= 2) {
       return {
@@ -195,16 +195,17 @@ class UserResolvers {
       }
     }
 
-    const user = await em.findOne(User, { id: +userID })
+    const user = await User.findOne(+userID)
     if (!user) {
       return {
         errors: [{ field: 'token', message: 'User no longer exists' }]
       }
     }
 
-    const hashPassword = await argon2.hash(password)
-    user.password = hashPassword
-    await em.persistAndFlush(user)
+    await User.update(
+      { id: +userID },
+      { password: await argon2.hash(password) }
+    )
 
     await redis.del(FORGOT_PASS_PREFIX + token)
 
