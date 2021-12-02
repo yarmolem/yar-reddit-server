@@ -1,6 +1,28 @@
-import { Arg, Mutation, Query, Resolver } from 'type-graphql'
-
+import {
+  Arg,
+  Ctx,
+  Field,
+  Query,
+  Mutation,
+  Resolver,
+  InputType,
+  UseMiddleware
+} from 'type-graphql'
 import Post from '../entities/Posts'
+import { isAuth } from '../middleware/isAuth'
+import { ApolloContext } from '../interfaces'
+
+@InputType()
+class PostInput {
+  @Field()
+  title: string
+
+  @Field()
+  image: string
+
+  @Field()
+  content: string
+}
 
 @Resolver()
 class PostResolvers {
@@ -14,9 +36,16 @@ class PostResolvers {
     return Post.findOne(id)
   }
 
+  @UseMiddleware(isAuth)
   @Mutation(() => Post)
-  async createPost(@Arg('title') title: string): Promise<Post> {
-    return Post.create({ title }).save()
+  async createPost(
+    @Ctx() { req }: ApolloContext,
+    @Arg('input') input: PostInput
+  ): Promise<Post> {
+    return Post.create({
+      ...input,
+      creatorId: req.session.userId
+    }).save()
   }
 
   @Mutation(() => Post, { nullable: true })

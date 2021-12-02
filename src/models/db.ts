@@ -1,8 +1,8 @@
-import { isProd } from '../utils/constants'
 import { createConnection } from 'typeorm'
 
 import Posts from '../entities/Posts'
 import Users from '../entities/Users'
+import { isProd } from '../utils/constants'
 
 class Database {
   async connect() {
