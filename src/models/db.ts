@@ -1,3 +1,4 @@
+import path from 'path'
 import { createConnection } from 'typeorm'
 
 import Posts from '../entities/Posts'
@@ -13,8 +14,13 @@ class Database {
       password: 'root',
       synchronize: true,
       database: 'yarredditv2',
-      entities: [Posts, Users]
+      entities: [Posts, Users],
+      migrations: [path.join(__dirname, '../migrations/*')]
     })
+
+    await orm.runMigrations()
+
+    // await Posts.delete({})
 
     return orm
   }

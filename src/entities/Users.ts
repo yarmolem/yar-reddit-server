@@ -2,12 +2,13 @@ import { Field, ObjectType } from 'type-graphql'
 import {
   Entity,
   Column,
+  OneToMany,
   BaseEntity,
   CreateDateColumn,
   UpdateDateColumn,
-  PrimaryGeneratedColumn,
-  OneToMany
+  PrimaryGeneratedColumn
 } from 'typeorm'
+
 import Posts from './Posts'
 
 @Entity()

@@ -1,16 +1,20 @@
 import {
+  Int,
   Arg,
   Ctx,
+  Root,
   Field,
   Query,
   Mutation,
   Resolver,
   InputType,
-  UseMiddleware
+  UseMiddleware,
+  FieldResolver
 } from 'type-graphql'
-import Post from '../entities/Posts'
-import { isAuth } from '../middleware/isAuth'
+import { getConnection } from 'typeorm'
 import { ApolloContext } from '../interfaces'
+import { isAuth } from '../middleware/isAuth'
+import Post, { Posts } from '../entities/Posts'
 
 @InputType()
 class PostInput {
@@ -24,11 +28,27 @@ class PostInput {
   content: string
 }
 
-@Resolver()
+@Resolver(Posts)
 class PostResolvers {
+  @FieldResolver(() => String)
+  textSnippet(@Root() root: Posts) {
+    if (root.content.trim().length <= 200) {
+      return root.content
+    }
+    return `${root.content.slice(0, 200)}...`
+  }
+
   @Query(() => [Post])
-  async getPosts(): Promise<Post[]> {
-    return Post.find()
+  async getPosts(
+    @Arg('limit', () => Int) limit: number,
+    @Arg('cursor', () => String, { nullable: true }) cursor: string | null
+  ): Promise<Post[]> {
+    const maxLimit = Math.min(50, limit)
+    const q = getConnection().getRepository(Posts).createQueryBuilder('p')
+
+    if (cursor) q.where('"createdAt" < :cursor', { cursor: new Date(+cursor) })
+
+    return q.orderBy('"createdAt"', 'DESC').take(maxLimit).getMany()
   }
 
   @Query(() => Post, { nullable: true })
