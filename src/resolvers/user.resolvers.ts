@@ -6,7 +6,9 @@ import {
   Mutation,
   Resolver,
   InputType,
-  ObjectType
+  ObjectType,
+  FieldResolver,
+  Root
 } from 'type-graphql'
 import { v4 } from 'uuid'
 import argon2 from 'argon2'
@@ -50,8 +52,15 @@ class UserResponse {
   errors?: FieldError[]
 }
 
-@Resolver()
+@Resolver(User)
 class UserResolvers {
+  // How to hide a field
+  @FieldResolver()
+  email(@Root() user: User, @Ctx() { req }: ApolloContext) {
+    if (req.session.userId === user.id) return user.email
+    return ''
+  }
+
   // ME
   @Query(() => User, { nullable: true })
   async me(@Ctx() { req }: ApolloContext): Promise<User | null> {

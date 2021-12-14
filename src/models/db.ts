@@ -1,4 +1,5 @@
 import path from 'path'
+import Updoot from '../entities/Updoot'
 import { createConnection } from 'typeorm'
 
 import Posts from '../entities/Posts'
@@ -14,7 +15,7 @@ class Database {
       password: 'root',
       synchronize: true,
       database: 'yarredditv2',
-      entities: [Posts, Users],
+      entities: [Posts, Users, Updoot],
       migrations: [path.join(__dirname, '../migrations/*')]
     })
 
