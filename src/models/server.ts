@@ -24,7 +24,7 @@ class Server {
     this.app.use(
       cors({
         credentials: true,
-        origin: 'http://localhost:3000'
+        origin: ['http://localhost:3000', 'https://studio.apollographql.com']
       })
     )
     this.app.use(this.session.sessionMiddleware)

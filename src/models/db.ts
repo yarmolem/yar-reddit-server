@@ -1,4 +1,4 @@
-import path from 'path'
+// import path from 'path'
 import Updoot from '../entities/Updoot'
 import { createConnection } from 'typeorm'
 
@@ -9,19 +9,16 @@ import { isProd } from '../utils/constants'
 class Database {
   async connect() {
     const orm = await createConnection({
-      logging: !isProd,
+      logging: isProd,
       type: 'postgres',
-      username: 'root',
-      password: 'root',
+      username: 'yarmo',
+      password: 'yarmo',
       synchronize: true,
-      database: 'yarredditv2',
-      entities: [Posts, Users, Updoot],
-      migrations: [path.join(__dirname, '../migrations/*')]
+      database: 'yarmo',
+      entities: [Posts, Users, Updoot]
     })
 
-    await orm.runMigrations()
-
-    // await Posts.delete({})
+    console.log('Connected to Database')
 
     return orm
   }

@@ -61,6 +61,11 @@ class UserResolvers {
     return ''
   }
 
+  @Query(() => String)
+  isWorking() {
+    return 'Yes, is working.'
+  }
+
   // ME
   @Query(() => User, { nullable: true })
   async me(@Ctx() { req }: ApolloContext): Promise<User | null> {
